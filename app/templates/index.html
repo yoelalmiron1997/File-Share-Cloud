@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Compartir Archivos</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+  </head>
+  <body>
+    <div class="upload-container">
+      <h1>Sube tus archivos</h1>
+
+      <form id="upload-form" method="POST" enctype="multipart/form-data">
+        <input
+          type="text"
+          name="uploader"
+          id="uploader"
+          placeholder="Tu nombre"
+          required
+          class="uploader-input"
+        />
+
+        <div id="drop-area">
+          <p>Arrastra tus archivos aquí o haz clic para seleccionar</p>
+          <input type="file" name="file" id="fileElem" multiple hidden />
+          <label class="button" for="fileElem">Seleccionar archivos</label>
+        </div>
+
+        <div id="file-list"></div>
+        <button type="submit" class="submit-button">Subir Archivos</button>
+      </form>
+
+      <h2>Archivos disponibles:</h2>
+      <ul>
+        {% for archivo in archivos %}
+        <li>
+          <a href="{{ url_for('main.files', filename=archivo) }}"
+            >{{ archivo }}</a
+          >
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <script>
+      const dropArea = document.getElementById("drop-area");
+      const fileInput = document.getElementById("fileElem");
+      const fileList = document.getElementById("file-list");
+      const uploadForm = document.getElementById("upload-form");
+
+      // Permitir que el área de caída dispare la selección de archivos
+      dropArea.addEventListener("click", () => fileInput.click());
+
+      // Escuchar los cambios en el input de archivo
+      fileInput.addEventListener("change", updateFileList);
+
+      // Agregar efectos para arrastrar y soltar archivos
+      dropArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropArea.classList.add("highlight");
+      });
+
+      dropArea.addEventListener("dragleave", () => {
+        dropArea.classList.remove("highlight");
+      });
+
+      dropArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropArea.classList.remove("highlight");
+        fileInput.files = e.dataTransfer.files; // Asignar archivos arrastrados al input
+        updateFileList(); // Actualizar la lista de archivos
+      });
+
+      // Función para actualizar la lista de archivos seleccionados
+      function updateFileList() {
+        // Asegurarse de que se haya seleccionado al menos un archivo
+        if (fileInput.files.length > 0) {
+          fileList.innerHTML = ""; // Limpiar la lista de archivos antes de mostrar los nuevos
+
+          // Mostrar cada archivo seleccionado
+          for (let file of fileInput.files) {
+            const listItem = document.createElement("div");
+            listItem.className = "file-item";
+            listItem.textContent = file.name;
+            fileList.appendChild(listItem);
+          }
+        }
+      }
+
+      // Manejo del envío del formulario
+      uploadForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(uploadForm);
+
+        // Enviar la solicitud al servidor
+        fetch("/", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => {
+            if (response.ok) {
+              uploadForm.reset(); // Restablecer el formulario
+              fileList.innerHTML = ""; // Limpiar la lista de archivos
+              window.location.reload(); // Recargar la página después de subir
+            } else {
+              alert("Error al subir el archivo.");
+            }
+          })
+          .catch(() => {
+            alert("Error de conexión.");
+          });
+      });
+    </script>
+  </body>
+</html>
